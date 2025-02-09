@@ -42,12 +42,12 @@ router.post('/', apiKeyAuth, async (req: Request, res: Response) => {
     users.set(userId, user);
 
     if (process.env.NODE_ENV === 'development') {
-      console.info('Creating user with sanitized input:', { email, name });
+      process.stdout.write(`Creating user with sanitized input: ${JSON.stringify({ email, name })}\n`);
     }
 
     if (req.session) {
       if (process.env.NODE_ENV === 'development') {
-        console.info('Session saved with user data');
+        process.stdout.write('Session saved with user data\n');
       }
       req.session.user = {
         userId,
@@ -59,7 +59,7 @@ router.post('/', apiKeyAuth, async (req: Request, res: Response) => {
     return res.status(201).json(user);
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
-      console.error('Error creating user:', error);
+      process.stderr.write(`Error creating user: ${error}\n`);
     }
     return res.status(500).json({
       error: 'Internal Server Error',

@@ -17,26 +17,26 @@ const redisClient = createClient(redisConfig);
 // Error handling
 redisClient.on('error', (err) => {
   if (process.env.NODE_ENV === 'development') {
-    console.error('Redis Client Error:', err);
+    process.stderr.write(`Redis Client Error: ${err}\n`);
   }
 });
 
 // Connection handling
 redisClient.on('connect', () => {
   if (process.env.NODE_ENV === 'development') {
-    console.info('Redis Client Connected');
+    process.stdout.write('Redis Client Connected\n');
   }
 });
 
 redisClient.on('ready', () => {
   if (process.env.NODE_ENV === 'development') {
-    console.info('Redis Client Ready');
+    process.stdout.write('Redis Client Ready\n');
   }
 });
 
 redisClient.on('end', () => {
   if (process.env.NODE_ENV === 'development') {
-    console.info('Redis Client Connection Ended');
+    process.stdout.write('Redis Client Connection Ended\n');
   }
 });
 
@@ -46,7 +46,7 @@ redisClient.on('end', () => {
     await redisClient.connect();
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
-      console.error('Redis Connection Error:', error);
+      process.stderr.write(`Redis Connection Error: ${error}\n`);
     }
     process.exit(1);
   }
@@ -57,12 +57,12 @@ process.on('SIGTERM', async () => {
   try {
     await redisClient.quit();
     if (process.env.NODE_ENV === 'development') {
-      console.info('Redis connection closed.');
+      process.stdout.write('Redis connection closed.\n');
     }
     process.exit(0);
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
-      console.error('Error during shutdown:', error);
+      process.stderr.write(`Error during shutdown: ${error}\n`);
     }
     process.exit(1);
   }

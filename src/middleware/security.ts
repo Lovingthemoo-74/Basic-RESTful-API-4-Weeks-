@@ -170,7 +170,12 @@ export const apiKeyAuth = (req: Request, res: Response, next: NextFunction): voi
 /**
  * Error Handler with detailed logging in development
  */
-export const errorHandler = (err: Error, req: Request, res: Response, _next: NextFunction): void => {
+export const errorHandler = (
+  err: Error,
+  req: Request,
+  res: Response,
+  _next: NextFunction
+): void => {
   const requestId = req.headers['x-request-id'] || randomUUID();
 
   const errorDetails = {
@@ -184,20 +189,26 @@ export const errorHandler = (err: Error, req: Request, res: Response, _next: Nex
   };
 
   if (process.env.NODE_ENV === 'development') {
-    console.error('Error details:', errorDetails);
+    process.stderr.write(`Error details: ${JSON.stringify(errorDetails)}\n`);
   }
 
   if (err.name === 'ValidationError' || err.message.includes('validation')) {
+    const devMessage = process.env.NODE_ENV === 'development' 
+      ? err.message 
+      : 'Invalid input data';
     res.status(400).json({
       error: 'Invalid Input',
-      message: process.env.NODE_ENV === 'development' ? err.message : 'Invalid input data'
+      message: devMessage
     });
     return;
   }
 
+  const devMessage = process.env.NODE_ENV === 'development' 
+    ? err.message 
+    : 'An unexpected error occurred';
   res.status(500).json({
     error: 'Internal Server Error',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'An unexpected error occurred'
+    message: devMessage
   });
 };
 
@@ -227,7 +238,7 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
   };
 
   if (process.env.NODE_ENV === 'development') {
-    console.info(JSON.stringify(logRequest));
+    process.stdout.write(`${JSON.stringify(logRequest)}\n`);
   }
 
   res.on('finish', () => {
@@ -242,7 +253,7 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
     };
 
     if (process.env.NODE_ENV === 'development') {
-      console.info(JSON.stringify(logResponse));
+      process.stdout.write(`${JSON.stringify(logResponse)}\n`);
     }
   });
 

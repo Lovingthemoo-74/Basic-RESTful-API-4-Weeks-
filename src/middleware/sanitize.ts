@@ -9,7 +9,6 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { randomUUID } from 'crypto';
 
 /**
  * HTML Sanitization Utility
@@ -33,15 +32,17 @@ const sanitizeHtml = (value: string): string => {
     '&lt;': '<',
     '&gt;': '>',
     '&quot;': '"',
-    "&#39;": "'",
-    "&#x27;": "'",
-    "&#x2F;": '/',
-    "&#x60;": '`',
-    "&#x3D;": '='
+    '&#39;': "'",
+    '&#x27;': "'",
+    '&#x2F;': '/',
+    '&#x60;': '`',
+    '&#x3D;': '='
   };
 
   // Replace entities safely using a static pattern
-  sanitized = sanitized.replace(/&[^;\s]+;/g, (match) => entities[match] || match);
+  const entityPattern = /&[^;\s]+;/g;
+  const replaceEntity = (match: string): string => entities[match] || match;
+  sanitized = sanitized.replace(entityPattern, replaceEntity);
 
   // Handle numeric entities
   sanitized = sanitized.replace(/&#(\d+);/g, (_, code) => 
@@ -125,7 +126,7 @@ export const sanitizeAndValidate = (req: Request, res: Response, next: NextFunct
     ]);
 
     // Process each field with its validation rule
-    Object.entries(req.body).forEach(([field, value]) => {
+    const processField = (field: string, value: unknown): void => {
       try {
         if (value == null) {
           return;
@@ -134,14 +135,21 @@ export const sanitizeAndValidate = (req: Request, res: Response, next: NextFunct
         const stringValue = String(value);
         const rule = allowedFields.get(field);
 
-        sanitizedBody[field] = rule 
+        // Apply validation rule or default to trimming
+        const sanitizedValue = rule 
           ? rule.sanitize(stringValue)
           : stringValue.trim();
+
+        // Store sanitized value
+        sanitizedBody[field] = sanitizedValue;
       } catch (err) {
         const errorDetail = `Failed to process ${field}: ${err instanceof Error ? err.message : String(err)}`;
         validationErrors.push(errorDetail);
       }
-    });
+    };
+
+    // Process all fields
+    Object.entries(req.body).forEach(([field, value]) => processField(field, value));
 
     if (validationErrors.length > 0) {
       res.status(400).json({
@@ -164,7 +172,8 @@ export const sanitizeAndValidate = (req: Request, res: Response, next: NextFunct
     };
 
     if (process.env.NODE_ENV === 'development') {
-      console.error('Validation error:', errorContext);
+      // Log error details in development only
+      process.stderr.write(`Validation error: ${JSON.stringify(errorContext)}\n`);
     }
 
     res.status(400).json({
